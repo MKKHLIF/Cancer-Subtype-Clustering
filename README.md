@@ -84,8 +84,33 @@ pip install -r requirements.txt
 
 ## Streamlit App
 
+Run locally from the **repository root**:
+
 ```bash
 streamlit run app/streamlit_app.py
 ```
 
 Live demo: *(link added after deployment)*
+
+---
+
+## Deployment (Streamlit Community Cloud)
+
+The app is deployed via [Streamlit Community Cloud](https://share.streamlit.io) (free tier).
+
+### Steps to deploy your own fork
+
+1. **Push the repo to GitHub** — ensure `models/`, `data/` (preprocessed CSVs), and `reports/figures/` are all committed. The raw data files (`data/data.csv`, `data/labels.csv`) stay gitignored.
+
+   > **Note on file sizes:** `models/pca.joblib` is ~85 MB. GitHub accepts files up to 100 MB; the push will succeed with a size warning. If the push is rejected, store the file with [Git LFS](https://git-lfs.com) and add a download step in the app.
+
+2. **Connect on Streamlit Community Cloud:**
+   - Go to [share.streamlit.io](https://share.streamlit.io) and sign in with GitHub.
+   - Click **New app → Deploy a public app from GitHub**.
+   - Set **Main file path** to `app/streamlit_app.py`.
+   - Leave **Python version** as detected from `runtime.txt` (`3.11`).
+   - Click **Deploy**.
+
+3. **First-run behaviour:** Streamlit Cloud clones the repo, installs `requirements.txt`, and launches the app. All model and data files are loaded from the committed repo — no extra download step is needed.
+
+4. **Update the live URL above** once the deployment is live.
