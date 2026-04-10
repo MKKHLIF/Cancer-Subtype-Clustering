@@ -41,8 +41,6 @@ All data and model files are loaded relative to the repository root, so
 the working directory must be the project root when launching.
 """
 
-import sys
-import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -57,17 +55,12 @@ from sklearn.metrics import (
     normalized_mutual_info_score,
 )
 
-sys.path.insert(0, "src")
-from download_data import ensure_data
-
 # ---------------------------------------------------------------------------
 # Directory paths — relative to repository root
 # ---------------------------------------------------------------------------
-DATA_DIR   = "data"
-MODELS_DIR = "models"
-
-with st.spinner("Checking data files …"):
-    ensure_data(data_dir=DATA_DIR)
+DATA_DIR    = "data"
+MODELS_DIR  = "models"
+FIGURES_DIR = "reports/figures"
 
 # ---------------------------------------------------------------------------
 # Data loaders
@@ -80,21 +73,19 @@ with st.spinner("Checking data files …"):
 # ---------------------------------------------------------------------------
 
 @st.cache_data
-def load_raw():
-    """Load the raw gene expression matrix and cancer subtype labels.
+def load_labels():
+    """Load cancer subtype labels from the pre-computed cluster assignments file.
+
+    Labels are stored in cluster_assignments.csv (committed to the repo) so the
+    app never needs to download the large raw data files at runtime.
 
     Returns
     -------
-    X : pd.DataFrame
-        Expression matrix, shape (801, 20531). Rows are patient samples,
-        columns are genes.
-    labels : pd.Series
+    pd.Series
         Cancer subtype for each sample — one of BRCA, KIRC, COAD, LUAD, PRAD.
-        Used only for evaluation; never passed to the clustering algorithms.
+        Used only for evaluation; never passed to clustering algorithms.
     """
-    X      = pd.read_csv(f"{DATA_DIR}/data.csv",   index_col=0)
-    labels = pd.read_csv(f"{DATA_DIR}/labels.csv", index_col=0)["Class"]
-    return X, labels
+    return pd.read_csv(f"{DATA_DIR}/cluster_assignments.csv", index_col=0)["true_label"]
 
 
 @st.cache_data
@@ -251,20 +242,19 @@ def page_overview():
     """Render the dataset overview and exploratory analysis page."""
     st.title("Dataset Overview & EDA")
     st.markdown(
-        "This page gives a high-level view of the raw gene expression data before "
-        "any preprocessing. All 20,531 genes and 801 samples are shown as-is."
+        "High-level summary of the TCGA Gene Expression RNA-Seq dataset. "
+        "Plots were generated during the exploratory analysis notebook and are "
+        "displayed here as pre-computed figures."
     )
 
-    X, labels = load_raw()
+    labels     = load_labels()
+    kept_genes = load_kept_genes()
+    X_pca_df   = load_pca_matrix()
 
     col1, col2, col3 = st.columns(3)
-    col1.metric("Samples", X.shape[0])
-    col2.metric("Genes",   X.shape[1])
+    col1.metric("Samples", X_pca_df.shape[0])
+    col2.metric("Genes (original)", 20_531)
     col3.metric("Cancer subtypes", labels.nunique())
-
-    st.subheader("Sample of the expression matrix")
-    st.caption("Showing first 5 samples × first 8 genes. Values are raw RNA-Seq counts.")
-    st.dataframe(X.iloc[:5, :8], use_container_width=True)
 
     # --- Label distribution ---
     st.subheader("Label distribution")
@@ -285,44 +275,23 @@ def page_overview():
     fig.tight_layout()
     st.pyplot(fig)
 
-    # --- Expression value distributions ---
+    # --- Pre-computed figures from the EDA notebook ---
     st.subheader("Expression value distribution")
     st.markdown(
         "RNA-Seq data is heavily right-skewed and sparse. The left plot shows the "
-        "raw distribution (200k random values); the right plot shows only non-zero "
-        "values to reveal the shape of the expressed genes."
+        "raw distribution; the right shows only non-zero values."
     )
-    flat = X.values.flatten()
-    rng  = np.random.default_rng(42)
-    flat = flat[rng.choice(len(flat), size=min(200_000, len(flat)), replace=False)]
+    st.image(f"{FIGURES_DIR}/expression_distribution.png", use_container_width=True)
 
-    fig, axes = plt.subplots(1, 2, figsize=(12, 3.5))
-    axes[0].hist(flat, bins=80, color="steelblue", edgecolor="none")
-    axes[0].set_title("Raw expression values (random sample)")
-    axes[0].set_xlabel("Expression count")
-    nz = flat[flat > 0]
-    axes[1].hist(nz, bins=80, color="coral", edgecolor="none")
-    axes[1].set_title(f"Non-zero values only ({len(nz)/len(flat)*100:.1f}% of sample)")
-    axes[1].set_xlabel("Expression count")
-    fig.tight_layout()
-    st.pyplot(fig)
-
-    # --- Per-gene variance ---
     st.subheader("Per-gene variance")
     st.markdown(
-        "Many genes have near-zero variance across all samples — they carry no "
-        "discriminative information and are removed before PCA. The histogram shows "
-        "the full variance distribution across all genes."
+        "Many genes have near-zero variance across all samples and are removed before "
+        f"PCA. **{len(kept_genes):,}** genes survived the zero-variance filter."
     )
-    gene_var = X.var(axis=0)
-    st.write(gene_var.describe().rename("Variance").to_frame())
+    st.image(f"{FIGURES_DIR}/gene_variance.png", use_container_width=True)
 
-    fig, ax = plt.subplots(figsize=(8, 3))
-    ax.hist(gene_var, bins=100, color="mediumseagreen", edgecolor="none")
-    ax.set_xlabel("Variance"); ax.set_ylabel("Number of genes")
-    ax.set_title("Per-Gene Variance Distribution (all genes)")
-    fig.tight_layout()
-    st.pyplot(fig)
+    st.subheader("Mean expression — top 20 most variable genes per subtype")
+    st.image(f"{FIGURES_DIR}/heatmap_top20_genes.png", use_container_width=True)
 
 
 # ---------------------------------------------------------------------------
@@ -340,7 +309,7 @@ def page_pca():
     )
 
     X_pca_df    = load_pca_matrix()
-    _, labels   = load_raw()
+    labels      = load_labels()
     assignments = load_assignments()
     _, pca, *_  = load_models()
 
@@ -423,7 +392,7 @@ def page_clustering():
     )
 
     X_pca_df        = load_pca_matrix()
-    _, labels       = load_raw()
+    labels          = load_labels()
     X_tsne, X_umap  = load_embeddings()
 
     st.sidebar.header("Clustering parameters")
@@ -507,7 +476,7 @@ def page_evaluation():
     metrics         = load_metrics()
     assignments     = load_assignments()
     X_pca_df        = load_pca_matrix()
-    _, labels       = load_raw()
+    labels          = load_labels()
     X_tsne, X_umap  = load_embeddings()
 
     # Metrics table with best-value highlighting
@@ -581,23 +550,22 @@ def page_predict():
         "standardisation, and PCA projection — then assign each sample to one of the "
         "five clusters using the pre-trained K-Means model."
     )
-    st.info(
-        "If no file is uploaded, three random samples from the training set are used "
-        "as a demonstration so you can see the pipeline in action."
-    )
-
     scaler, pca, km5, umap_model = load_models()
     kept_genes  = load_kept_genes()
-    _, labels   = load_raw()
+    labels      = load_labels()
     X_umap      = load_embeddings()[1]
 
     uploaded = st.file_uploader("Upload gene expression CSV", type=["csv"])
 
     if uploaded is None:
-        X_raw, _ = load_raw()
-        sample_df = X_raw.sample(3, random_state=99)
-    else:
-        sample_df = pd.read_csv(uploaded, index_col=0)
+        st.info(
+            "Upload a CSV file to get started. "
+            "The file must have one row per sample and one column per gene, "
+            "using the same gene identifiers as the training data."
+        )
+        st.stop()
+
+    sample_df = pd.read_csv(uploaded, index_col=0)
 
     st.subheader("Input preview")
     st.caption("Showing first 8 genes only.")
