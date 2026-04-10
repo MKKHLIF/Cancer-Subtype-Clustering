@@ -1,5 +1,6 @@
-# Data
-# data/
+# Raw data files — too large for git, downloaded at runtime from Google Drive
+data/data.csv
+data/labels.csv
 
 # Python
 __pycache__/
