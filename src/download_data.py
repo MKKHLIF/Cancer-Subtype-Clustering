@@ -16,8 +16,8 @@ import gdown
 # Update these two values after uploading the files to Google Drive.
 # ---------------------------------------------------------------------------
 DRIVE_FILE_IDS = {
-    "data.csv"  : "REPLACE_WITH_DATA_CSV_FILE_ID",
-    "labels.csv": "REPLACE_WITH_LABELS_CSV_FILE_ID",
+    "data.csv"  : "1Q1AKjSsG9IhVXmrFbGoX9Yomv9zvzZtl",
+    "labels.csv": "1NUihn4bF9fsH3hDgzIlwspqoX1SnLBew",
 }
 
 
@@ -36,9 +36,6 @@ def ensure_data(data_dir: str = "data") -> None:
         dest = os.path.join(data_dir, filename)
         if not os.path.exists(dest):
             print(f"Downloading {filename} from Google Drive …")
-            gdown.download(
-                f"https://drive.google.com/uc?id={file_id}",
-                dest, quiet=False, fuzzy=True,
-            )
+            gdown.download(id=file_id, output=dest, quiet=False)
         else:
             print(f"Already exists, skipping: {dest}")

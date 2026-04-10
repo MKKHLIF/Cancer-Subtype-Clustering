@@ -281,17 +281,17 @@ def page_overview():
         "RNA-Seq data is heavily right-skewed and sparse. The left plot shows the "
         "raw distribution; the right shows only non-zero values."
     )
-    st.image(f"{FIGURES_DIR}/expression_distribution.png", use_container_width=True)
+    st.image(f"{FIGURES_DIR}/expression_distribution.png", use_column_width=True)
 
     st.subheader("Per-gene variance")
     st.markdown(
         "Many genes have near-zero variance across all samples and are removed before "
         f"PCA. **{len(kept_genes):,}** genes survived the zero-variance filter."
     )
-    st.image(f"{FIGURES_DIR}/gene_variance.png", use_container_width=True)
+    st.image(f"{FIGURES_DIR}/gene_variance.png", use_column_width=True)
 
     st.subheader("Mean expression — top 20 most variable genes per subtype")
-    st.image(f"{FIGURES_DIR}/heatmap_top20_genes.png", use_container_width=True)
+    st.image(f"{FIGURES_DIR}/heatmap_top20_genes.png", use_column_width=True)
 
 
 # ---------------------------------------------------------------------------
