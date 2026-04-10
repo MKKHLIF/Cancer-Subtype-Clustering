@@ -1,0 +1,40 @@
+# Data
+# data/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Models (optionally track with Git LFS)
+# models/*.joblib
+
+# Secrets / env vars
+.env
+
+# Reports (keep figures, ignore large outputs)
+reports/*.pdf
+
+# Project-specific ignores
+plan.md
+.claude/
+*.pdf
