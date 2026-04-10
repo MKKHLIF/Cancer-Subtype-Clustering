@@ -48,6 +48,7 @@ import seaborn as sns
 import joblib
 import streamlit as st
 
+from pathlib import Path
 from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.metrics import (
     silhouette_score,
@@ -56,11 +57,25 @@ from sklearn.metrics import (
 )
 
 # ---------------------------------------------------------------------------
-# Directory paths — relative to repository root
+# Directory paths — resolved relative to this file so they work regardless
+# of the working directory (local or Streamlit Community Cloud).
 # ---------------------------------------------------------------------------
-DATA_DIR    = "data"
-MODELS_DIR  = "models"
-FIGURES_DIR = "reports/figures"
+_ROOT       = Path(__file__).parent.parent
+DATA_DIR    = _ROOT / "data"
+MODELS_DIR  = _ROOT / "models"
+FIGURES_DIR = _ROOT / "reports" / "figures"
+
+
+def _show_image(path: Path, **kwargs):
+    """Display an image if the file exists; show an info box otherwise.
+
+    Uses use_column_width internally for compatibility with all Streamlit versions.
+    """
+    if path.exists():
+        kwargs.pop("use_container_width", None)
+        st.image(str(path), use_column_width="always", **kwargs)
+    else:
+        st.info(f"Figure not found: `{path.name}`. Re-run the EDA notebook to regenerate it.")
 
 # ---------------------------------------------------------------------------
 # Data loaders
@@ -85,7 +100,7 @@ def load_labels():
         Cancer subtype for each sample — one of BRCA, KIRC, COAD, LUAD, PRAD.
         Used only for evaluation; never passed to clustering algorithms.
     """
-    return pd.read_csv(f"{DATA_DIR}/cluster_assignments.csv", index_col=0)["true_label"]
+    return pd.read_csv(DATA_DIR / "cluster_assignments.csv", index_col=0)["true_label"]
 
 
 @st.cache_data
@@ -98,7 +113,7 @@ def load_pca_matrix():
         Shape (801, n_components). Each column is one principal component.
         n_components is however many PCs were needed to reach 95% explained variance.
     """
-    return pd.read_csv(f"{DATA_DIR}/X_pca.csv", index_col=0)
+    return pd.read_csv(DATA_DIR / "X_pca.csv", index_col=0)
 
 
 @st.cache_data
@@ -115,8 +130,8 @@ def load_embeddings():
     umap : pd.DataFrame
         UMAP 2D coordinates with columns ['x', 'y'].
     """
-    tsne = pd.read_csv(f"{DATA_DIR}/X_tsne.csv", index_col=0)
-    umap = pd.read_csv(f"{DATA_DIR}/X_umap.csv", index_col=0)
+    tsne = pd.read_csv(DATA_DIR / "X_tsne.csv", index_col=0)
+    umap = pd.read_csv(DATA_DIR / "X_umap.csv", index_col=0)
     return tsne, umap
 
 
@@ -130,7 +145,7 @@ def load_assignments():
         Columns: true_label, kmeans_k5, agg_ward, agg_complete, agg_average.
         One row per sample.
     """
-    return pd.read_csv(f"{DATA_DIR}/cluster_assignments.csv", index_col=0)
+    return pd.read_csv(DATA_DIR / "cluster_assignments.csv", index_col=0)
 
 
 @st.cache_data
@@ -142,7 +157,7 @@ def load_metrics():
     pd.DataFrame
         Columns: Algorithm, Silhouette, ARI, NMI. One row per algorithm.
     """
-    return pd.read_csv(f"{DATA_DIR}/eval_metrics.csv")
+    return pd.read_csv(DATA_DIR / "eval_metrics.csv")
 
 
 @st.cache_resource
@@ -164,10 +179,10 @@ def load_models():
         UMAP model fitted on the PCA-reduced training matrix.
         Used to project new (uploaded) samples into the existing 2D layout.
     """
-    scaler      = joblib.load(f"{MODELS_DIR}/scaler.joblib")
-    pca         = joblib.load(f"{MODELS_DIR}/pca.joblib")
-    km5         = joblib.load(f"{MODELS_DIR}/kmeans_k5.joblib")
-    umap_model  = joblib.load(f"{MODELS_DIR}/umap.joblib")
+    scaler      = joblib.load(MODELS_DIR / "scaler.joblib")
+    pca         = joblib.load(MODELS_DIR / "pca.joblib")
+    km5         = joblib.load(MODELS_DIR / "kmeans_k5.joblib")
+    umap_model  = joblib.load(MODELS_DIR / "umap.joblib")
     return scaler, pca, km5, umap_model
 
 
@@ -184,7 +199,7 @@ def load_kept_genes():
     list of str
         Gene identifiers in the order expected by the scaler.
     """
-    return pd.read_csv(f"{DATA_DIR}/kept_genes.csv")["gene"].tolist()
+    return pd.read_csv(DATA_DIR / "kept_genes.csv")["gene"].tolist()
 
 
 # ---------------------------------------------------------------------------
@@ -281,17 +296,17 @@ def page_overview():
         "RNA-Seq data is heavily right-skewed and sparse. The left plot shows the "
         "raw distribution; the right shows only non-zero values."
     )
-    st.image(f"{FIGURES_DIR}/expression_distribution.png", use_container_width=True)
+    _show_image(FIGURES_DIR / "expression_distribution.png", use_container_width=True)
 
     st.subheader("Per-gene variance")
     st.markdown(
         "Many genes have near-zero variance across all samples and are removed before "
         f"PCA. **{len(kept_genes):,}** genes survived the zero-variance filter."
     )
-    st.image(f"{FIGURES_DIR}/gene_variance.png", use_container_width=True)
+    _show_image(FIGURES_DIR / "gene_variance.png", use_container_width=True)
 
     st.subheader("Mean expression — top 20 most variable genes per subtype")
-    st.image(f"{FIGURES_DIR}/heatmap_top20_genes.png", use_container_width=True)
+    _show_image(FIGURES_DIR / "heatmap_top20_genes.png", use_container_width=True)
 
 
 # ---------------------------------------------------------------------------
