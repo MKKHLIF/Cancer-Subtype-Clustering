@@ -41,6 +41,7 @@ All data and model files are loaded relative to the repository root, so
 the working directory must be the project root when launching.
 """
 
+import sys
 import os
 import numpy as np
 import pandas as pd
@@ -48,7 +49,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import joblib
 import streamlit as st
-import gdown
 
 from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.metrics import (
@@ -57,40 +57,17 @@ from sklearn.metrics import (
     normalized_mutual_info_score,
 )
 
+sys.path.insert(0, "src")
+from download_data import ensure_data
+
 # ---------------------------------------------------------------------------
 # Directory paths — relative to repository root
 # ---------------------------------------------------------------------------
 DATA_DIR   = "data"
 MODELS_DIR = "models"
 
-# ---------------------------------------------------------------------------
-# Google Drive file IDs for the two raw data files.
-# To get the ID from a sharing link:
-#   https://drive.google.com/file/d/<FILE_ID>/view?usp=sharing
-#                                   ^^^^^^^^^ this part
-# ---------------------------------------------------------------------------
-DRIVE_FILE_IDS = {
-    "data.csv"  : "REPLACE_WITH_DATA_CSV_FILE_ID",
-    "labels.csv": "REPLACE_WITH_LABELS_CSV_FILE_ID",
-}
-
-
-def ensure_data():
-    """Download raw data files from Google Drive if they are not present locally.
-
-    This runs once on startup. After the first download the files are cached
-    on disk and subsequent runs skip this step entirely.
-    """
-    os.makedirs(DATA_DIR, exist_ok=True)
-    for filename, file_id in DRIVE_FILE_IDS.items():
-        dest = f"{DATA_DIR}/{filename}"
-        if not os.path.exists(dest):
-            url = f"https://drive.google.com/uc?id={file_id}"
-            with st.spinner(f"Downloading {filename} from Google Drive …"):
-                gdown.download(url, dest, quiet=False, fuzzy=True)
-
-
-ensure_data()
+with st.spinner("Checking data files …"):
+    ensure_data(data_dir=DATA_DIR)
 
 # ---------------------------------------------------------------------------
 # Data loaders
