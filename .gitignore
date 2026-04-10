@@ -27,7 +27,7 @@ env/
 Thumbs.db
 
 # Models — too large for GitHub (pca.joblib is 84 MB)
-models/*.joblib
+#models/*.joblib
 
 # Secrets / env vars
 .env
