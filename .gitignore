@@ -39,3 +39,5 @@ reports/*.pdf
 plan.md
 .claude/
 *.pdf
+
+.idea/
