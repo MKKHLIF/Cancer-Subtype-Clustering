@@ -26,8 +26,8 @@ env/
 .DS_Store
 Thumbs.db
 
-# Models (optionally track with Git LFS)
-# models/*.joblib
+# Models — too large for GitHub (pca.joblib is 84 MB)
+models/*.joblib
 
 # Secrets / env vars
 .env
