@@ -64,8 +64,11 @@ venv\Scripts\activate
 # macOS/Linux
 source venv/bin/activate
 
-# Install dependencies
+# Install app dependencies
 pip install -r requirements.txt
+
+# Additional packages required to run the notebooks locally
+pip install jupyter==1.0.0 ipykernel==6.29.4 plotly==5.22.0
 ```
 
 ---
