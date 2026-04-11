@@ -54,7 +54,7 @@ EOF
 
 ```bash
 # Clone the repo
-git clone <repo-url>
+git clone https://github.com/MKKHLIF/Cancer-Subtype-Clustering
 cd Cancer-Subtype-Clustering
 
 # Create and activate virtual environment
